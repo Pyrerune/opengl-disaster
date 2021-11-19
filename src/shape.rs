@@ -82,57 +82,74 @@ impl Shape {
             vertex!(*v4.as_ref(), *n.as_ref(), color),
         ];
         Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, &[0, 1, 2, 0, 2, 3], transform)
-    }/*
+    }
     pub fn cube(display: &glium::Display, dimensions: [f32; 3], center: [f32; 3], color: [f32; 3], transform: glm::TMat4<f32>) -> Shape {
         let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
+        let v0 = glm::vec3(min_x, min_y, min_z);
+        let v1 = glm::vec3(min_x, max_y, min_z);
+        let v2 = glm::vec3(max_x, min_y, min_z);
+        let v3 = glm::vec3(max_x, max_y, min_z);
+        let v4 = glm::vec3(min_x, min_y, max_z);
+        let v5 = glm::vec3(min_x, max_y, max_z);
+        let v6 = glm::vec3(max_x, min_y, max_z);
+        let v7 = glm::vec3(max_x, max_y, max_z);
+        let back_left = v1 - v0;
+        let back_bottom = v2 - v0;
+        let bottom_left = v4 - v0;
+        let right1 = v3 - v2;
+        let right2 = v6 - v2;
+        let top1 = v3 - v1;
+        let top2 = v5 - v1;
+        let front1 = v5 - v4;
+        let front2 = v6 - v4;
+        let back_normal = glm::cross(&back_left, &back_bottom);
+        let left_normal = glm::cross(&back_left, &bottom_left);
+        let right_normal = glm::cross(&right1, &right2);
+        let top_normal = glm::cross(&top1, &top2);
+        let bottom_normal = glm::cross(&back_bottom, &bottom_left);
+        let front_normal = glm::cross(&front1, &front2);
+        let back_index = [0, 1, 2, 1, 2, 3];
+        let left_index = [4, 5, 6, 5, 6, 7];
+        let right_index = [8, 9, 10, 9, 10, 11];
+        let top_index = [12, 13, 14, 13, 14, 15];
+        let bottom_index = [16, 17, 18, 17, 18, 19];
+        let front_index = [20, 21, 22, 21, 22, 23];
+        let index_data = &[back_index, left_index, right_index, top_index, bottom_index, front_index].concat();
         let vertex_data = &[
             //back face
-            //0 reuse
-            vertex!([min_x, min_y, min_z], color),
-            //1 reuse
-            vertex!([min_x, max_y, min_z], color),
-            //2 reuse
-            vertex!([max_x, min_y, min_z], color),
-            //3 reuse
-            vertex!([max_x, max_y, min_z], color),
+            vertex!(*v0.as_ref(), *back_normal.as_ref(), color),
+            vertex!(*v1.as_ref(), *back_normal.as_ref(), color),
+            vertex!(*v2.as_ref(), *back_normal.as_ref(), color),
+            vertex!(*v3.as_ref(), *back_normal.as_ref(), color),
             //side left
-            //0
-            //1
-
-            //4 reuse
-            vertex!([min_x, min_y, max_z], color),
-            //5 reuse
-            vertex!([min_x, max_y, max_z], color),
+            vertex!(*v0.as_ref(), *left_normal.as_ref(), color),
+            vertex!(*v1.as_ref(), *left_normal.as_ref(), color),
+            vertex!(*v4.as_ref(), *left_normal.as_ref(), color),
+            vertex!(*v5.as_ref(), *left_normal.as_ref(), color),
             //side right
-            //2
-            //3
+            vertex!(*v2.as_ref(), *right_normal.as_ref(), color),
+            vertex!(*v3.as_ref(), *right_normal.as_ref(), color),
+            vertex!(*v6.as_ref(), *right_normal.as_ref(), color),
+            vertex!(*v7.as_ref(), *right_normal.as_ref(), color),
 
-            //6 reuse
-            vertex!([max_x, min_y, max_z], color),
-            //7 reuse
-            vertex!([max_x, max_y, max_z], color),
             //top
-            //1
-            //3
-            //5
-            //7
+            vertex!(*v1.as_ref(), *top_normal.as_ref(), color),
+            vertex!(*v3.as_ref(), *top_normal.as_ref(), color),
+            vertex!(*v5.as_ref(), *top_normal.as_ref(), color),
+            vertex!(*v7.as_ref(), *top_normal.as_ref(), color),
+
             //bottom
-            //0
-            //2
-            //4
-            //6
+            vertex!(*v0.as_ref(), *bottom_normal.as_ref(), color),
+            vertex!(*v2.as_ref(), *bottom_normal.as_ref(), color),
+            vertex!(*v4.as_ref(), *bottom_normal.as_ref(), color),
+            vertex!(*v6.as_ref(), *bottom_normal.as_ref(), color),
             //front
-            //4
-            // 5
-            // 6
-            // 7
+            vertex!(*v4.as_ref(), *front_normal.as_ref(), color),
+            vertex!(*v5.as_ref(), *front_normal.as_ref(), color),
+            vertex!(*v6.as_ref(), *front_normal.as_ref(), color),
+            vertex!(*v7.as_ref(), *front_normal.as_ref(), color),
         ];
-        let index_data = &[
-            0, 1, 2, 3, 0, 1, 4, 5, 2, 3, 6, 7, 1, 3, 5, 7,
-            0, 2, 4, 6, 4, 5, 6, 7
-        ];
-        Shape::construct(display.clone(), vertex_data, PrimitiveType::TriangleStrip, index_data, transform)
+        Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, index_data, transform)
     }
-*/
 }
 

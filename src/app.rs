@@ -83,8 +83,8 @@ impl App {
         target.clear_color(100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0);
         let mut model = glm::translate(&mat4(1.0), &glm::vec3(1.0, 0.0, 0.0));
         self.draw(Shape::square(&self.display, [1.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 1.0], model), &mut target);
-        //let cube = glm::rotate(&mat4(1.0), glm::radians(&glm::vec1(45.0)).x, &glm::vec3(1.0, 1.0, 0.0));
-        //self.draw(Shape::cube(&self.display, [0.5, 0.5, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], cube), &mut target);
+        let cube = glm::translate(&mat4(1.0), &glm::vec3(0.0, -1.0, 0.0));
+        self.draw(Shape::cube(&self.display, [0.5, 0.5, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], cube), &mut target);
         target.finish().unwrap();
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {
