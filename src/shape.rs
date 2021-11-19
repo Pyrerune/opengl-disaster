@@ -1,10 +1,27 @@
 use crate::vertex::Vertex;
-use glium::{VertexBuffer, IndexBuffer};
+use glium::{VertexBuffer, IndexBuffer, Display};
 use glium::index::PrimitiveType;
+use glm::TVec3;
 macro_rules! vertex {
-    ($position:expr, $color:expr) => {
-        Vertex::new($position, $color)
+    ($position:expr, $normal:expr, $color:expr) => {
+        Vertex::new($position, $color, $normal)
     }
+}
+fn construct_vertex(vertices: [TVec3<f32>; 3], color: [f32; 3]) -> [Vertex; 3] {
+    let mut vertex_data: [Vertex; 3] = [vertex!([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]); 3];
+    let b = vertices[0];
+    let r = vertices[1];
+    let s = vertices[2];
+    let qr = r - b;
+    let qs = s - b;
+    let n = glm::cross(&qr, &qs);
+    let vb = vertex!(*b.as_ref(), *n.as_ref(), color);
+    let vr = vertex!(*r.as_ref(), *n.as_ref(), color);
+    let vs = vertex!(*s.as_ref(), *n.as_ref(), color);
+    vertex_data[0] = vb;
+    vertex_data[1] = vr;
+    vertex_data[2] = vs;
+    vertex_data
 }
 fn get_coords(dimensions: [f32; 3], center: [f32; 3]) -> [(f32, f32); 3] {
     let min_x = center[0] - (dimensions[0] / 2.0);
@@ -50,14 +67,22 @@ impl Shape {
     pub fn square(display: &glium::Display, dimensions: [f32; 2], center: [f32; 3], color: [f32; 3], transform: glm::TMat4<f32>) -> Shape {
 
         let [(min_x, max_x), (min_y, max_y), _] = get_coords([dimensions[0], dimensions[1], 0.0], center);
-        let vertex_data = &[
-            vertex!([min_x, min_y, center[2]], color),
-            vertex!([min_x, max_y, center[2]], color),
-            vertex!([max_x, min_y, center[2]], color),
-            vertex!([max_x, max_x, center[2]], color),
+
+        let v1 = glm::vec3(min_x, min_y, center[2]);
+        let v2= glm::vec3(min_x, max_y, center[2]);
+        let v3 = glm::vec3(max_x, max_y, center[2]);
+        let v4 = glm::vec3(max_x, min_y, center[2]);
+        let l1 = v2 - v1;
+        let l2 = v3 - v1;
+        let n = glm::cross(&l1, &l2);
+        let vertex_data  = &[
+            vertex!(*v1.as_ref(), *n.as_ref(), color),
+            vertex!(*v2.as_ref(), *n.as_ref(), color),
+            vertex!(*v3.as_ref(), *n.as_ref(), color),
+            vertex!(*v4.as_ref(), *n.as_ref(), color),
         ];
-        Shape::construct(display.clone(), vertex_data, PrimitiveType::TriangleStrip, &[0, 1, 2, 3], transform)
-    }
+        Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, &[0, 1, 2, 0, 2, 3], transform)
+    }/*
     pub fn cube(display: &glium::Display, dimensions: [f32; 3], center: [f32; 3], color: [f32; 3], transform: glm::TMat4<f32>) -> Shape {
         let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
         let vertex_data = &[
@@ -108,5 +133,6 @@ impl Shape {
         ];
         Shape::construct(display.clone(), vertex_data, PrimitiveType::TriangleStrip, index_data, transform)
     }
+*/
 }
 

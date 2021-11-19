@@ -46,5 +46,6 @@ fn main() {
     //TODO implement lighting
     //TODO calculate normal vectors
     let ev = glutin::event_loop::EventLoop::new();
+
     event_loop(ev);
 }

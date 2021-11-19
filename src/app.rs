@@ -9,7 +9,7 @@ use glium::glutin::dpi::PhysicalPosition;
 
 const MOUSE_DELAY: u32 = 45;
 const KEY_DELAY: u32 = 45;
-
+const STEP: f32 = 100.0;
 fn mat4(val: f32) -> glm::TMat4<f32> {
     glm::mat4(val, 0.0, 0.0, 0.0,
                 0.0, val, 0.0, 0.0,
@@ -62,13 +62,14 @@ impl App {
     }
 
     pub fn draw(&self, shape: Shape, target: &mut Frame) {
-
+        let light_color: [f32;3] = [1.0, 1.0, 1.0];
+        let light_pos: [f32;3] = [0.0, 1.0, 1.0];
         let uniforms = uniform! {
             model: *shape.model_matrix().as_ref(),
             view: *self.camera.view().as_ref(),
             projection: *self.camera.projection().as_ref(),
-            lightPos: [0.0, 3.0, 3.0],
-            lightColor: [1.0, 1.0, 1.0],
+            lightColor: light_color,
+            lightPos: light_pos,
             objectColor: shape.get_color(),
 
         };
@@ -79,12 +80,11 @@ impl App {
         self.camera.set_time(self.current_frame - self.last_frame);
         self.last_frame = self.current_frame;
         let mut target = self.display.draw();
-        target.clear_color(0.0, 0.0, 1.0, 1.0);
-        let mut model = glm::rotate(&mat4(1.0), glm::radians(&glm::vec1(45.0)).x, &glm::vec3(1.0, 0.0, 0.0));
-        model = glm::translate(&model, &glm::vec3(1.0, 0.0, 0.0));
+        target.clear_color(100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0);
+        let mut model = glm::translate(&mat4(1.0), &glm::vec3(1.0, 0.0, 0.0));
         self.draw(Shape::square(&self.display, [1.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 1.0], model), &mut target);
-        let cube = glm::rotate(&mat4(1.0), glm::radians(&glm::vec1(45.0)).x, &glm::vec3(1.0, 1.0, 0.0));
-        self.draw(Shape::cube(&self.display, [0.5, 0.5, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], cube), &mut target);
+        //let cube = glm::rotate(&mat4(1.0), glm::radians(&glm::vec1(45.0)).x, &glm::vec3(1.0, 1.0, 0.0));
+        //self.draw(Shape::cube(&self.display, [0.5, 0.5, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], cube), &mut target);
         target.finish().unwrap();
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {
@@ -93,19 +93,19 @@ impl App {
             if let Some(key) = input.virtual_keycode {
                 match key {
                     VirtualKeyCode::Up => {
-                        self.camera.forward(5.0);
+                        self.camera.forward(STEP);
                         cf = glutin::event_loop::ControlFlow::Poll;
                     }
                     VirtualKeyCode::Down => {
-                        self.camera.backward(5.0);
+                        self.camera.backward(STEP);
                         cf = glutin::event_loop::ControlFlow::Poll;
                     }
                     VirtualKeyCode::Left => {
-                        self.camera.left(5.0);
+                        self.camera.left(STEP);
                         cf = glutin::event_loop::ControlFlow::Poll;
                     }
                     VirtualKeyCode::Right => {
-                        self.camera.right(5.0);
+                        self.camera.right(STEP);
                         cf = glutin::event_loop::ControlFlow::Poll;
                     }
                     VirtualKeyCode::Escape => {
