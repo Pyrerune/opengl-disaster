@@ -1,5 +1,5 @@
 use glium::glutin::event_loop::EventLoop;
-use glium::{glutin, Program, Surface, Frame};
+use glium::{glutin, Program, Surface, Frame, DepthTest};
 use crate::shape::Shape;
 use crate::shader::Shader;
 use crate::camera::Camera;
@@ -7,8 +7,6 @@ use glium::glutin::event::{KeyboardInput, VirtualKeyCode};
 use std::time::Instant;
 use glium::glutin::dpi::PhysicalPosition;
 
-const MOUSE_DELAY: u32 = 45;
-const KEY_DELAY: u32 = 45;
 const STEP: f32 = 100.0;
 fn mat4(val: f32) -> glm::TMat4<f32> {
     glm::mat4(val, 0.0, 0.0, 0.0,
@@ -25,8 +23,6 @@ pub struct App {
     last_frame: f32,
     current_frame: f32,
     pub mouse_pos: PhysicalPosition<f32>,
-    pub mouse_delay: u32,
-    pub key_delay: u32,
     x_bound: bool
 }
 impl App {
@@ -49,8 +45,6 @@ impl App {
             start_time: time,
             current_frame: 0.0,
             last_frame: 0.0,
-            mouse_delay: 0,
-            key_delay: 0,
             x_bound: false,
             mouse_pos: PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32),
         }
@@ -63,7 +57,7 @@ impl App {
 
     pub fn draw(&self, shape: Shape, target: &mut Frame) {
         let light_color: [f32;3] = [1.0, 1.0, 1.0];
-        let light_pos: [f32;3] = [0.0, 1.0, 1.0];
+        let light_pos: [f32;3] = [3.0, 0.0, 0.0];
         let uniforms = uniform! {
             model: *shape.model_matrix().as_ref(),
             view: *self.camera.view().as_ref(),
@@ -73,7 +67,16 @@ impl App {
             objectColor: shape.get_color(),
 
         };
-        target.draw(shape.get_vbuffer(), shape.get_ibuffer(), &self.program, &uniforms, &Default::default()).unwrap();
+        let params = glium::draw_parameters::DrawParameters {
+            depth: glium::Depth {
+                test: glium::DepthTest::IfLess,
+                write: false,
+                .. Default::default()
+            },
+            .. Default::default()
+
+        };
+        target.draw(shape.get_vbuffer(), shape.get_ibuffer(), &self.program, &uniforms, &params).unwrap();
     }
     pub fn render(&mut self) {
         self.current_frame = self.start_time.elapsed().as_secs_f32();
@@ -89,60 +92,54 @@ impl App {
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {
         let mut cf = glutin::event_loop::ControlFlow::Poll;
-        if self.key_delay >= KEY_DELAY {
-            if let Some(key) = input.virtual_keycode {
-                match key {
-                    VirtualKeyCode::Up => {
-                        self.camera.forward(STEP);
-                        cf = glutin::event_loop::ControlFlow::Poll;
-                    }
-                    VirtualKeyCode::Down => {
-                        self.camera.backward(STEP);
-                        cf = glutin::event_loop::ControlFlow::Poll;
-                    }
-                    VirtualKeyCode::Left => {
-                        self.camera.left(STEP);
-                        cf = glutin::event_loop::ControlFlow::Poll;
-                    }
-                    VirtualKeyCode::Right => {
-                        self.camera.right(STEP);
-                        cf = glutin::event_loop::ControlFlow::Poll;
-                    }
-                    VirtualKeyCode::Escape => {
-                        cf = glutin::event_loop::ControlFlow::Exit;
-                    }
-                    _ => {}
+        if let Some(key) = input.virtual_keycode {
+            match key {
+                VirtualKeyCode::Up => {
+                    self.camera.forward(STEP);
+                    cf = glutin::event_loop::ControlFlow::Poll;
                 }
+                VirtualKeyCode::Down => {
+                    self.camera.backward(STEP);
+                    cf = glutin::event_loop::ControlFlow::Poll;
+                }
+                VirtualKeyCode::Left => {
+                    self.camera.left(STEP);
+                    cf = glutin::event_loop::ControlFlow::Poll;
+                }
+                VirtualKeyCode::Right => {
+                    self.camera.right(STEP);
+                    cf = glutin::event_loop::ControlFlow::Poll;
+                }
+                VirtualKeyCode::Escape => {
+                    cf = glutin::event_loop::ControlFlow::Exit;
+                }
+                _ => {}
             }
-            self.key_delay = 0;
         }
         cf
     }
     pub fn cursor_moved(&mut self, position: PhysicalPosition<f64>) -> glutin::event_loop::ControlFlow {
-        if self.mouse_delay >= MOUSE_DELAY {
-            //println!("Got input");
-            let mut xoff = position.x as f32 - self.mouse_pos.x;
-            let mut yoff = self.mouse_pos.y - position.y as f32;
-            if self.x_bound {
-                xoff = 0.0;
-                self.x_bound = false;
-            }
-            self.mouse_pos = position.cast();
-            let sensitivity = 0.05;
-            xoff *= sensitivity;
-            yoff *= sensitivity;
-            println!("{} {}", xoff, yoff);
-            self.camera.pitch(yoff);
-            self.camera.yaw(xoff);
-            if self.camera.pitch > 89.0 {
-                self.camera.pitch = 89.0;
-            }
-            if self.camera.pitch < -89.0 {
-                self.camera.pitch = -89.0;
-            }
-            self.camera.transform();
-            self.mouse_delay = 0;
+        //println!("Got input");
+        let mut xoff = position.x as f32 - self.mouse_pos.x;
+        let mut yoff = self.mouse_pos.y - position.y as f32;
+        if self.x_bound {
+            xoff = 0.0;
+            self.x_bound = false;
         }
+        self.mouse_pos = position.cast();
+        let sensitivity = 0.05;
+        xoff *= sensitivity;
+        yoff *= sensitivity;
+        //println!("{} {}", xoff, yoff);
+        self.camera.pitch(yoff);
+        self.camera.yaw(xoff);
+        if self.camera.pitch > 89.0 {
+            self.camera.pitch = 89.0;
+        }
+        if self.camera.pitch < -89.0 {
+            self.camera.pitch = -89.0;
+        }
+        self.camera.transform();
         self.check_mouse_x();
         glutin::event_loop::ControlFlow::Poll
     }

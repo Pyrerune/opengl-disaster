@@ -81,7 +81,7 @@ impl Shape {
             vertex!(*v3.as_ref(), *n.as_ref(), color),
             vertex!(*v4.as_ref(), *n.as_ref(), color),
         ];
-        Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, &[0, 1, 2, 0, 2, 3], transform)
+        Shape::construct(display.clone(), vertex_data, PrimitiveType::LinesList, &[0, 1, 2, 0, 2, 3], transform)
     }
     pub fn cube(display: &glium::Display, dimensions: [f32; 3], center: [f32; 3], color: [f32; 3], transform: glm::TMat4<f32>) -> Shape {
         let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
@@ -117,37 +117,62 @@ impl Shape {
         let index_data = &[back_index, left_index, right_index, top_index, bottom_index, front_index].concat();
         let vertex_data = &[
             //back face
+            //0
             vertex!(*v0.as_ref(), *back_normal.as_ref(), color),
+            //1
             vertex!(*v1.as_ref(), *back_normal.as_ref(), color),
+            //2
             vertex!(*v2.as_ref(), *back_normal.as_ref(), color),
+            //3
             vertex!(*v3.as_ref(), *back_normal.as_ref(), color),
             //side left
+            //4
             vertex!(*v0.as_ref(), *left_normal.as_ref(), color),
+            //5
             vertex!(*v1.as_ref(), *left_normal.as_ref(), color),
+            //6
             vertex!(*v4.as_ref(), *left_normal.as_ref(), color),
+            //7
             vertex!(*v5.as_ref(), *left_normal.as_ref(), color),
             //side right
+            //8
             vertex!(*v2.as_ref(), *right_normal.as_ref(), color),
+            //9
             vertex!(*v3.as_ref(), *right_normal.as_ref(), color),
+            //10
             vertex!(*v6.as_ref(), *right_normal.as_ref(), color),
+            //11
             vertex!(*v7.as_ref(), *right_normal.as_ref(), color),
 
             //top
+            //12
             vertex!(*v1.as_ref(), *top_normal.as_ref(), color),
+            //13
             vertex!(*v3.as_ref(), *top_normal.as_ref(), color),
+            //14
             vertex!(*v5.as_ref(), *top_normal.as_ref(), color),
+            //15
             vertex!(*v7.as_ref(), *top_normal.as_ref(), color),
 
             //bottom
+            //16
             vertex!(*v0.as_ref(), *bottom_normal.as_ref(), color),
+            //17
             vertex!(*v2.as_ref(), *bottom_normal.as_ref(), color),
+            //18
             vertex!(*v4.as_ref(), *bottom_normal.as_ref(), color),
+            //19
             vertex!(*v6.as_ref(), *bottom_normal.as_ref(), color),
             //front
+            //20
             vertex!(*v4.as_ref(), *front_normal.as_ref(), color),
+            //21
             vertex!(*v5.as_ref(), *front_normal.as_ref(), color),
+            //22
             vertex!(*v6.as_ref(), *front_normal.as_ref(), color),
+            //23
             vertex!(*v7.as_ref(), *front_normal.as_ref(), color),
+
         ];
         Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, index_data, transform)
     }

@@ -37,14 +37,12 @@ fn event_loop(ev: EventLoop<()>) {
             },
             _ => glutin::event_loop::ControlFlow::Poll,
         };
-        app.key_delay += 1;
-        app.mouse_delay += 1;
     });
 
 }
 fn main() {
-    //TODO implement lighting
-    //TODO calculate normal vectors
+    //TODO implement textures
+
     let ev = glutin::event_loop::EventLoop::new();
 
     event_loop(ev);
