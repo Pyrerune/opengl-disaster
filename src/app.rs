@@ -1,11 +1,13 @@
 use glium::glutin::event_loop::EventLoop;
-use glium::{glutin, Program, Surface, Frame, DepthTest};
+use glium::{glutin, Program, Surface, Frame};
 use crate::shape::Shape;
 use crate::shader::Shader;
 use crate::camera::Camera;
 use glium::glutin::event::{KeyboardInput, VirtualKeyCode};
 use std::time::Instant;
 use glium::glutin::dpi::PhysicalPosition;
+use std::fs::File;
+use std::path::Path;
 
 const STEP: f32 = 100.0;
 fn mat4(val: f32) -> glm::TMat4<f32> {
@@ -13,6 +15,13 @@ fn mat4(val: f32) -> glm::TMat4<f32> {
                 0.0, val, 0.0, 0.0,
               0.0, 0.0, val, 0.0,
                     0.0, 0.0, 0.0, val)
+}
+fn load_image<P: AsRef<Path>>(display: &glium::Display, filename: P) -> glium::texture::SrgbTexture2d {
+    let image = image::io::Reader::open(filename).unwrap().decode()
+        .unwrap().to_rgba8();
+    let dimensions = image.dimensions();
+    let raw = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), dimensions);
+    glium::texture::SrgbTexture2d::new(display, raw).unwrap()
 }
 #[derive(Debug)]
 pub struct App {
@@ -25,6 +34,8 @@ pub struct App {
     pub mouse_pos: PhysicalPosition<f32>,
     x_bound: bool,
     y_bound: bool,
+    texture: glium::texture::SrgbTexture2d,
+
 }
 impl App {
 
@@ -40,7 +51,7 @@ impl App {
         display.gl_window().window().set_cursor_grab(true);
         display.gl_window().window().set_cursor_position(PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32));
         App {
-            display,
+            display: display.clone(),
             program,
             camera: Camera::new(viewport),
             start_time: time,
@@ -49,12 +60,8 @@ impl App {
             x_bound: false,
             y_bound: false,
             mouse_pos: PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32),
+            texture: load_image(&display, "./iron_wood_log.png")
         }
-    }
-    pub fn set_shaders(&mut self, shader: Shader) {
-        let program = glium::Program::from_source(&self.display, &shader.get_vertex(), &shader.get_fragment(), None).unwrap();
-        self.program = program;
-
     }
 
     pub fn draw(&self, shape: Shape, target: &mut Frame) {
@@ -66,7 +73,8 @@ impl App {
             projection: *self.camera.projection().as_ref(),
             lightColor: light_color,
             lightPos: light_pos,
-            objectColor: shape.get_color(),
+            objectColor: [0.0, 0.0, 0.0],
+            tex: &self.texture,
 
         };
         let params = glium::draw_parameters::DrawParameters {
@@ -87,7 +95,7 @@ impl App {
         let mut target = self.display.draw();
         target.clear_color_and_depth((100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0), 1.0);
         let cube = glm::translate(&mat4(1.0), &glm::vec3(0.0, -1.0, 0.0));
-        self.draw(Shape::cube(&self.display, [0.5, 0.5, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], cube), &mut target);
+        self.draw(Shape::cube(&self.display, &[0.5, 0.5, 0.5], &[0.0, 0.0, 0.0],cube), &mut target);
         target.finish().unwrap();
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {
@@ -160,18 +168,18 @@ impl App {
     }
     fn check_mouse_y(&mut self) {
         let (_, y) = self.display.get_framebuffer_dimensions();
-        let mut lower_y = y / 8;
-        let mut upper_y = (y / 2) + lower_y;
+        let lower_y = y / 8;
+        let upper_y = (y / 2) + lower_y;
         if (self.mouse_pos.y >= (upper_y) as f32 || self.mouse_pos.y <= (lower_y as f32)) && !self.y_bound {
-            self.mouse_pos.y  = (upper_y as f32 / 2.0);
+            self.mouse_pos.y  = upper_y as f32 / 2.0;
             self.y_bound = true;
             self.display.gl_window().window().set_cursor_position(self.mouse_pos);
         }
     }
     fn check_mouse_x(&mut self) {
         let (x, _) = self.display.get_framebuffer_dimensions();
-        let mut lower_x = x / 8;
-        let mut upper_x = (x / 2) + lower_x;
+        let lower_x = x / 8;
+        let upper_x = (x / 2) + lower_x;
         if (self.mouse_pos.x >= (upper_x) as f32 || self.mouse_pos.x <= (lower_x) as f32) && !self.x_bound {
             self.mouse_pos.x = upper_x as f32 / 2.0;
             self.x_bound = true;
