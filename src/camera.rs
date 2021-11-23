@@ -42,6 +42,12 @@ impl Camera {
     pub fn set_time(&mut self, delta: f32) {
         self.delta_time = delta;
     }
+    pub fn up(&mut self, step: f32) {
+        self.position += step * self.delta_time * self.up;
+    }
+    pub fn down(&mut self, step: f32) {
+        self.position -= step * self.delta_time * self.up;
+    }
     pub fn forward(&mut self, step: f32) {
         self.position += step * self.delta_time * self.front;
         self.update();

@@ -1,3 +1,4 @@
+use std::str::from_boxed_utf8_unchecked;
 use crate::vertex::Vertex;
 use glium::{VertexBuffer, IndexBuffer, Display};
 use glium::index::PrimitiveType;
@@ -81,7 +82,7 @@ impl Shape {
             vertex!(*v3.as_ref(), *n.as_ref(), color),
             vertex!(*v4.as_ref(), *n.as_ref(), color),
         ];
-        Shape::construct(display.clone(), vertex_data, PrimitiveType::LinesList, &[0, 1, 2, 0, 2, 3], transform)
+        Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, &[0, 1, 2, 0, 2, 3], transform)
     }
     pub fn cube(display: &glium::Display, dimensions: [f32; 3], center: [f32; 3], color: [f32; 3], transform: glm::TMat4<f32>) -> Shape {
         let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
@@ -96,18 +97,14 @@ impl Shape {
         let back_left = v1 - v0;
         let back_bottom = v2 - v0;
         let bottom_left = v4 - v0;
-        let right1 = v3 - v2;
-        let right2 = v6 - v2;
         let top1 = v3 - v1;
         let top2 = v5 - v1;
-        let front1 = v5 - v4;
-        let front2 = v6 - v4;
         let back_normal = glm::cross(&back_left, &back_bottom);
-        let left_normal = glm::cross(&back_left, &bottom_left);
-        let right_normal = glm::cross(&right1, &right2);
-        let top_normal = glm::cross(&top1, &top2);
-        let bottom_normal = glm::cross(&back_bottom, &bottom_left);
-        let front_normal = glm::cross(&front1, &front2);
+        let right_normal = glm::cross(&back_left, &bottom_left);
+        let left_normal = right_normal * -1.0;
+        let bottom_normal = glm::cross(&top1, &top2);
+        let top_normal = bottom_normal * -1.0;
+        let front_normal = back_normal * -1.0;
         let back_index = [0, 1, 2, 1, 2, 3];
         let left_index = [4, 5, 6, 5, 6, 7];
         let right_index = [8, 9, 10, 9, 10, 11];

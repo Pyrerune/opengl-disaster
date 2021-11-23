@@ -19,6 +19,7 @@ fn event_loop(ev: EventLoop<()>) {
         app.render();
         let frame_time = std::time::Instant::now() + std::time::Duration::from_micros(20);
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(frame_time);
+
         *control_flow = match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 glutin::event::WindowEvent::CloseRequested => {
@@ -42,7 +43,7 @@ fn event_loop(ev: EventLoop<()>) {
 }
 fn main() {
     //TODO implement textures
-
+    //TODO make code more readable
     let ev = glutin::event_loop::EventLoop::new();
 
     event_loop(ev);
