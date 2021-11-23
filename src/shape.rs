@@ -61,7 +61,6 @@ fn get_coords(dimensions: &[f32; 3], center: &[f32; 3]) -> [(f32, f32); 3] {
 pub struct Shape {
     vertex_buffer: VertexBuffer<Vertex>,
     index_buffer: IndexBuffer<u16>,
-    transform: glm::TMat4<f32>,
 }
 
 impl Shape {
@@ -71,22 +70,19 @@ impl Shape {
     pub fn get_ibuffer(&self) -> &'_ IndexBuffer<u16> {
         &self.index_buffer
     }
-    pub fn model_matrix(&self) -> glm::TMat4<f32> {
-        self.transform
-    }
 
-    pub fn construct(display: glium::Display, data: &[Vertex], prim_type: PrimitiveType, idata: &[u16], transform: glm::TMat4<f32>) -> Self {
+
+    pub fn construct(display: glium::Display, data: &[Vertex], prim_type: PrimitiveType, idata: &[u16]) -> Self {
         let vbuffer = glium::VertexBuffer::new(&display, data).unwrap();
         let ibuffer = glium::IndexBuffer::new(&display,
                             prim_type, idata).unwrap();
         Shape {
             vertex_buffer: vbuffer,
             index_buffer: ibuffer,
-            transform,
         }
 
     }
-    pub fn cube(display: &glium::Display, dimensions: &[f32; 3], center: &[f32; 3], transform: glm::TMat4<f32>) -> Shape {
+    pub fn cube(display: &glium::Display, dimensions: &[f32; 3], center: &[f32; 3]) -> Shape {
         let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
         let v0 = glm::vec3(min_x, min_y, min_z);
         let v1 = glm::vec3(min_x, max_y, min_z);
@@ -117,7 +113,7 @@ impl Shape {
             bottom_face,
             front_face
         ].concat();
-        Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, &index_data, transform)
+        Shape::construct(display.clone(), vertex_data, PrimitiveType::TrianglesList, &index_data)
     }
 }
 

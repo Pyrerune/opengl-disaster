@@ -8,6 +8,7 @@ use std::time::Instant;
 use glium::glutin::dpi::PhysicalPosition;
 use std::fs::File;
 use std::path::Path;
+use crate::world::{line, LineOrientation, plane, PlaneOrientation};
 
 const STEP: f32 = 100.0;
 fn mat4(val: f32) -> glm::TMat4<f32> {
@@ -68,7 +69,7 @@ impl App {
         let light_color: [f32;3] = [1.0, 1.0, 1.0];
         let light_pos: [f32;3] = [-2.0, 2.0, 2.0];
         let uniforms = uniform! {
-            model: *shape.model_matrix().as_ref(),
+            model: *mat4(1.0).as_ref(),
             view: *self.camera.view().as_ref(),
             projection: *self.camera.projection().as_ref(),
             lightColor: light_color,
@@ -94,8 +95,10 @@ impl App {
         self.last_frame = self.current_frame;
         let mut target = self.display.draw();
         target.clear_color_and_depth((100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0), 1.0);
-        let cube = glm::translate(&mat4(1.0), &glm::vec3(0.0, -1.0, 0.0));
-        self.draw(Shape::cube(&self.display, &[0.5, 0.5, 0.5], &[0.0, 0.0, 0.0],cube), &mut target);
+        let world = plane(&self.display, 10, 10, PlaneOrientation::HorizontalX, [0.0, 0.0, 0.0]);
+        for block in world {
+            self.draw(block, &mut target);
+        }
         target.finish().unwrap();
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {

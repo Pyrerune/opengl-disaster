@@ -3,6 +3,7 @@ mod vertex;
 mod app;
 mod shape;
 mod camera;
+mod world;
 
 #[macro_use]
 extern crate glium;
@@ -42,8 +43,7 @@ fn event_loop(ev: EventLoop<()>) {
 
 }
 fn main() {
-    //TODO implement textures
-    //TODO make code more readable
+    //TODO Optimize block drawing
     let ev = glutin::event_loop::EventLoop::new();
 
     event_loop(ev);
