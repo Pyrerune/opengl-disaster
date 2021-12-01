@@ -17,8 +17,6 @@ impl Camera {
 
         let direction = glm::normalize(&(position-target));
         let up = glm::vec3(0.0, 1.0, 0.0);
-        //let right = glm::normalize(&glm::cross(&up, &direction));
-        //let camera_up = glm::cross(&direction, &right);
         let front = glm::vec3(0.0, 0.0, -1.0);
         let projection = glm::perspective((display.0/display.1) as f32, glm::radians(&glm::vec1(45.0)).x, 0.1, 100.0);
         let view = glm::look_at(&position, &(position + front), &up);
@@ -34,7 +32,7 @@ impl Camera {
             yaw: -90.0,
         }
     }
-    pub fn update(&mut self) {
+    fn update(&mut self) {
         let view = glm::look_at(&self.position, &(self.position + self.front), &self.up);
         self.set_view(view);
 

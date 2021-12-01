@@ -6,9 +6,7 @@ use crate::camera::Camera;
 use glium::glutin::event::{KeyboardInput, VirtualKeyCode};
 use std::time::Instant;
 use glium::glutin::dpi::PhysicalPosition;
-use std::fs::File;
 use std::path::Path;
-use crate::world::{line, LineOrientation, plane, PlaneOrientation};
 
 const STEP: f32 = 100.0;
 fn mat4(val: f32) -> glm::TMat4<f32> {
@@ -36,6 +34,7 @@ pub struct App {
     x_bound: bool,
     y_bound: bool,
     texture: glium::texture::SrgbTexture2d,
+    world: Shape,
 
 }
 impl App {
@@ -49,8 +48,10 @@ impl App {
         let viewport = display.get_framebuffer_dimensions();
         let time = std::time::Instant::now();
         //display.gl_window().window().set_cursor_visible(false);
-        display.gl_window().window().set_cursor_grab(true);
-        display.gl_window().window().set_cursor_position(PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32));
+        display.gl_window().window().set_cursor_grab(true).unwrap();
+        let world = Shape::plane(&display, 16, 128,16, [0.0, 0.0, 0.0]);
+
+        display.gl_window().window().set_cursor_position(PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32)).unwrap();
         App {
             display: display.clone(),
             program,
@@ -61,11 +62,12 @@ impl App {
             x_bound: false,
             y_bound: false,
             mouse_pos: PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32),
-            texture: load_image(&display, "./iron_wood_log.png")
+            texture: load_image(&display, "./cow_horror.jpg"),
+            world,
         }
     }
 
-    pub fn draw(&self, shape: Shape, target: &mut Frame) {
+    pub fn draw(&self, shape: &Shape, target: &mut Frame) {
         let light_color: [f32;3] = [1.0, 1.0, 1.0];
         let light_pos: [f32;3] = [-2.0, 2.0, 2.0];
         let uniforms = uniform! {
@@ -95,10 +97,8 @@ impl App {
         self.last_frame = self.current_frame;
         let mut target = self.display.draw();
         target.clear_color_and_depth((100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0), 1.0);
-        let world = plane(&self.display, 10, 10, PlaneOrientation::HorizontalX, [0.0, 0.0, 0.0]);
-        for block in world {
-            self.draw(block, &mut target);
-        }
+
+        self.draw(&self.world, &mut target);
         target.finish().unwrap();
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {
@@ -176,7 +176,7 @@ impl App {
         if (self.mouse_pos.y >= (upper_y) as f32 || self.mouse_pos.y <= (lower_y as f32)) && !self.y_bound {
             self.mouse_pos.y  = upper_y as f32 / 2.0;
             self.y_bound = true;
-            self.display.gl_window().window().set_cursor_position(self.mouse_pos);
+            self.display.gl_window().window().set_cursor_position(self.mouse_pos).unwrap();
         }
     }
     fn check_mouse_x(&mut self) {
@@ -186,7 +186,7 @@ impl App {
         if (self.mouse_pos.x >= (upper_x) as f32 || self.mouse_pos.x <= (lower_x) as f32) && !self.x_bound {
             self.mouse_pos.x = upper_x as f32 / 2.0;
             self.x_bound = true;
-            self.display.gl_window().window().set_cursor_position(self.mouse_pos);
+            self.display.gl_window().window().set_cursor_position(self.mouse_pos).unwrap();
         }
     }
 }

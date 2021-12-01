@@ -30,7 +30,7 @@ impl Default for Shader {
 fn open_shader<T: AsRef<Path>>(filename: T) -> String {
     let mut file = File::open(filename).unwrap();
     let mut content = String::new();
-    file.read_to_string(&mut content);
+    file.read_to_string(&mut content).unwrap();
     content
 }
 
