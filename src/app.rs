@@ -49,8 +49,7 @@ impl App {
         let time = std::time::Instant::now();
         //display.gl_window().window().set_cursor_visible(false);
         display.gl_window().window().set_cursor_grab(true).unwrap();
-        let world = Shape::plane(&display, 16, 128,16, [0.0, 0.0, 0.0]);
-
+        let world = Shape::optimized_plane(&display, 3, 1, 3, [0.0, 0.0, 0.0]);
         display.gl_window().window().set_cursor_position(PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32)).unwrap();
         App {
             display: display.clone(),
@@ -62,7 +61,7 @@ impl App {
             x_bound: false,
             y_bound: false,
             mouse_pos: PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32),
-            texture: load_image(&display, "./cow_horror.jpg"),
+            texture: load_image(&display, "./iron_wood_log.png"),
             world,
         }
     }

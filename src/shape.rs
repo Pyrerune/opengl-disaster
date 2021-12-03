@@ -3,6 +3,8 @@ use crate::vertex::Vertex;
 use glium::{VertexBuffer, IndexBuffer};
 use glium::index::PrimitiveType;
 use glm::TVec3;
+use arrayvec::ArrayVec;
+
 fn optimize_world(world: &Vec<Face>) -> Vec<Face> {
 
     let mut new_world: Vec<Face> = world.clone();
@@ -54,6 +56,7 @@ impl Face {
             vertices: [triangle1, triangle2].concat().try_into().unwrap(),
         }
     }
+
 }
 
 
@@ -67,7 +70,7 @@ fn replace_normal(vertices: &[Vertex; 3], normal: &[f32;3]) -> [Vertex; 3] {
     }
     vertex_data.try_into().expect("Wrong Size")
 }
-fn construct_vertex(vertices: &[TVec3<f32>; 3], tex_coords: [[f32;2];3]) -> [Vertex; 3] {
+fn construct_vertex(vertices: &[TVec3<f32>], tex_coords: [[f32;2];3]) -> [Vertex; 3] {
     let b = vertices[0];
     let r = vertices[1];
     let s = vertices[2];
@@ -88,7 +91,6 @@ fn get_coords(dimensions: &[f32; 3], center: &[f32; 3]) -> [(f32, f32); 3] {
     let max_z = min_z + dimensions[2];
     [(min_x, max_x), (min_y, max_y), (min_z, max_z)]
 }
-
 #[derive(Debug)]
 pub struct Shape {
     vertex_buffer: VertexBuffer<Vertex>,
@@ -110,32 +112,73 @@ impl Shape {
             index_buffer: ibuffer,
         }
     }
-    pub fn optimized_cube(dimensions: &[f32;3], center: &[f32; 3]) -> Vec<Face> {
-        let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
-        let v0 = glm::vec3(min_x, min_y, min_z);
-        let v1 = glm::vec3(min_x, max_y, min_z);
-        let v2 = glm::vec3(max_x, min_y, min_z);
-        let v3 = glm::vec3(max_x, max_y, min_z);
-        let tex_coords = [
-            [1.0, 0.0],
-            [1.0, 1.0],
-            [0.0, 0.0],
-            [0.0, 1.0],
-        ];
-        let back_face = Face::construct_face(&[v0, v1, v2, v3], false, tex_coords);
 
-        vec![back_face]
-        //TODO somehow optimize the math to not even calculate faces that are hidden
+    fn top_face(width: u32, depth: u32, start: [f32;3]) -> (Vec<Vertex>, Vec<u16>) {
+        let mut current_pos = start;
+        let b = TVec3::new(start[0], start[1], start[2]);
+        let r = TVec3::new(start[0] + 0.5, start[1], start[2]);
+        let s = TVec3::new(start[0], start[1], start[2] + 0.5);
+        let qr = r - b;
+        let qs = s - b;
+        let n = glm::cross(&qr, &qs);
+        let normal = *n.as_ref();
+        let tex_coords = [
+            [1.0, 0.0],  // bottom right
+            [1.0, 1.0],  // top right
+            [0.0, 0.0],  // bottom left
+            [0.0, 1.0],  // top left
+        ];
+        let mut vertices = vec![];
+        let mut indices = vec![];
+        let mut index: u16 = 0;
+        for i in 0..=width {
+            for j in 0..=depth {
+                index += j as u16;
+                if index <= (width * depth) as u16 {
+                    if !(i > 0 && j == 0) {
+                        if (index + depth as u16 + 2) < ((width + 1) * (depth + 1)) as u16 {
+                            if index != (depth + i) as u16 {
+                                indices = [indices, vec![index, index + 1, index + 1 + depth as u16, index + 1, index + 1 + depth as u16, index + 1 + depth as u16 + 1]].concat();
+                            }
+                        }
+                    }
+                }
+
+                    //TODO FIX THE INDICES
+                    //indices = [indices, vec![j as u16, (j + 1) as u16, ((j + 1) + ((i + 1) * (width + 1))) as u16, (j + 1) as u16, ((j + 1) + ((i + 1) * (width + 1))) as u16, ((j + 1) + ((i + 1) * (width + 1)) + 1) as u16]].concat();
+
+                if (i as f32 * 0.5).fract() == 0.0 {
+                    //left
+                    if (j as f32 * 0.5).fract() == 0.0 {
+                        //top
+                        vertices.push(vertex!(current_pos, normal, tex_coords[3]));
+                    } else {
+                        vertices.push(vertex!(current_pos, normal, tex_coords[2]));
+                    }
+                } else {
+                    //right
+                    if (j as f32 * 0.5).fract() == 0.0 {
+                        //top
+                        vertices.push(vertex!(current_pos, normal, tex_coords[1]));
+                    } else {
+                        vertices.push(vertex!(current_pos, normal, tex_coords[0]));
+                    }
+                }
+                current_pos[2] += 0.5;
+            }
+
+            current_pos[0] += 0.5;
+            current_pos[2] = start[2];
+        }
+        println!("{:?}", indices);
+        (vertices, indices)
+
     }
-    pub fn cube(dimensions: &[f32; 3], center: &[f32; 3]) -> [Face; 6] {
+    pub fn cube(dimensions: &[f32; 3], center: &[f32; 3]) -> Face {
         let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
-        let v0 = glm::vec3(min_x, min_y, min_z);
         let v1 = glm::vec3(min_x, max_y, min_z);
-        let v2 = glm::vec3(max_x, min_y, min_z);
         let v3 = glm::vec3(max_x, max_y, min_z);
-        let v4 = glm::vec3(min_x, min_y, max_z);
         let v5 = glm::vec3(min_x, max_y, max_z);
-        let v6 = glm::vec3(max_x, min_y, max_z);
         let v7 = glm::vec3(max_x, max_y, max_z);
         let tex_coords = [
             [1.0, 0.0],
@@ -143,16 +186,17 @@ impl Shape {
             [0.0, 0.0],
             [0.0, 1.0],
         ];
-        let back_face = Face::construct_face(&[v0, v1, v2, v3], false, tex_coords);
-        let left_face = Face::construct_face(&[v0, v1, v4, v5], true, tex_coords);
+        Face::construct_face(&[v1, v3, v5, v7], true, tex_coords)
 
-        let right_face = Face::construct_face(&[v2, v3, v6, v7], false, tex_coords);
-        let top_face = Face::construct_face(&[v1, v3, v5, v7], true, tex_coords);
-        let bottom_face = Face::construct_face(&[v0, v2, v4, v6], false, tex_coords);
-        let front_face = Face::construct_face(&[v4, v5, v6, v7], true, tex_coords);
-        [back_face, left_face, right_face, top_face, bottom_face, front_face]
     }
+    pub fn optimized_plane(display: &glium::Display, width: u32, height: u32, depth: u32, start_pos: [f32;3]) -> Shape {
+        let start = Instant::now();
+        let mut top_vertices = Shape::top_face(width, depth, start_pos);
+        println!("1. {:?}", start.elapsed());
+        Shape::construct(display.clone(), &top_vertices.0, PrimitiveType::TrianglesList,
+        top_vertices.1)
 
+    }
     pub fn plane(display: &glium::Display, width: u32, height: u32, depth: u32, start_pos: [f32;3]) -> Shape {
         let start = Instant::now();
         let mut plane: Vec<Face> = vec![];
@@ -161,7 +205,7 @@ impl Shape {
             for _j in 0..depth {
                 for _x in 0..height {
                     println!("{:?}", start.elapsed());
-                    plane = [plane, Shape::optimized_cube(&[0.5;3], &center).to_vec()].concat();
+                    plane.push(Shape::cube(&[0.5;3], &center));
                     center[1] += 0.5;
                 }
 
