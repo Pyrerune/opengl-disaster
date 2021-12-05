@@ -133,44 +133,34 @@ impl Shape {
         let mut index: u16 = 0;
         for i in 0..=width {
             for j in 0..=depth {
-                index += j as u16;
-                if index <= (width * depth) as u16 {
-                    if !(i > 0 && j == 0) {
-                        if (index + depth as u16 + 2) < ((width + 1) * (depth + 1)) as u16 {
-                            if index != (depth + i) as u16 {
-                                indices = [indices, vec![index, index + 1, index + 1 + depth as u16, index + 1, index + 1 + depth as u16, index + 1 + depth as u16 + 1]].concat();
-                            }
-                        }
-                    }
+                if index != ((width + 1) * i + depth) as u16 && (index + 1 + depth as u16 + 1) < ((width + 1) * (depth + 1)) as u16 {
+                    indices = [indices, vec![index, index + 1, index + 1 + depth as u16, index + 1, index + 1 + depth as u16, index + 1 + depth as u16 + 1]].concat();
                 }
 
-                    //TODO FIX THE INDICES
-                    //indices = [indices, vec![j as u16, (j + 1) as u16, ((j + 1) + ((i + 1) * (width + 1))) as u16, (j + 1) as u16, ((j + 1) + ((i + 1) * (width + 1))) as u16, ((j + 1) + ((i + 1) * (width + 1)) + 1) as u16]].concat();
-
                 if (i as f32 * 0.5).fract() == 0.0 {
-                    //left
                     if (j as f32 * 0.5).fract() == 0.0 {
                         //top
                         vertices.push(vertex!(current_pos, normal, tex_coords[3]));
                     } else {
-                        vertices.push(vertex!(current_pos, normal, tex_coords[2]));
+                        vertices.push(vertex!(current_pos, normal, tex_coords[1]));
                     }
                 } else {
-                    //right
                     if (j as f32 * 0.5).fract() == 0.0 {
                         //top
-                        vertices.push(vertex!(current_pos, normal, tex_coords[1]));
+                        vertices.push(vertex!(current_pos, normal, tex_coords[2]));
                     } else {
                         vertices.push(vertex!(current_pos, normal, tex_coords[0]));
                     }
                 }
                 current_pos[2] += 0.5;
+
+                index += 1;
             }
 
             current_pos[0] += 0.5;
             current_pos[2] = start[2];
+
         }
-        println!("{:?}", indices);
         (vertices, indices)
 
     }
