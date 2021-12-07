@@ -1,101 +1,182 @@
-use std::time::Instant;
-use crate::vertex::Vertex;
+use crate::vertex::*;
 use glium::{VertexBuffer, IndexBuffer};
 use glium::index::PrimitiveType;
 use glm::TVec3;
-use arrayvec::ArrayVec;
+use std::collections::HashMap;
+use crate::shape::consts::*;
 
-fn optimize_world(world: &Vec<Face>) -> Vec<Face> {
-
-    let mut new_world: Vec<Face> = world.clone();
-    for _i in 0..new_world.len() {
-        let value = new_world.remove(0);
-        if new_world.contains(&value) {
-            if let Some(loc) = new_world.iter().position(|&a| {
-                a == value
-            }) {
-                new_world.remove(loc);
-            }
-        } else {
-            new_world.push(value);
+fn get_vertex_function(face: Faces) -> fn([i32;3], &[i32;3]) -> [Vertex; 6] {
+    match face {
+        Faces::Top => {
+            top
         }
+        Faces::Bottom => {
+            bottom
+        }
+        Faces::Left => {
+            left
+        }
+        Faces::Right => {
+            right
+        }
+        Faces::Back => {
+            back
+        }
+        Faces::Front => {
+            front
+        }
+    }
+}
+pub mod consts {
+    pub const SIZE: i32 = 1;
+    pub const TEX: [[i32; 2]; 4] = [
+        [1, 1],  // top right
+        [1, 0],  // bottom right
+        [0, 1],  // top left
+        [0, 0],  // bottom left
+    ];
+}
 
-    }
-    new_world
+#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub enum Faces {
+    Top,
+    Bottom,
+    Left,
+    Right,
+    Back,
+    Front,
 }
-macro_rules! vertex {
-    () => {
-        Vertex::default()
-    };
-    ($position:expr, $normal:expr, $tex_coords:expr) => {
-        Vertex::new($position, $tex_coords, $normal)
-    }
-}
-#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Face {
     vertices: [Vertex; 6],
 }
 
-
-
-impl Face {
-    pub fn construct_face(vertices: &[TVec3<f32>; 4], triangle1_normal: bool, tex_coords: [[f32;2];4]) -> Face {
-        let triangle2_vertices: [TVec3<f32>; 3] = vertices[0..=2].try_into().expect("Incorrect Size");
-        let triangle1_vertices: [TVec3<f32>; 3] = vertices[1..=3].try_into().expect("Incorrect Size");
-
-        let tex_coords2: [[f32;2];3] = tex_coords[0..=2].try_into().expect("Incorrect Size");
-        let tex_coords1: [[f32;2];3] = tex_coords[1..=3].try_into().expect("Incorrect Size");
-        let mut triangle1 = construct_vertex(&triangle1_vertices, tex_coords1);
-        let mut triangle2 = construct_vertex(&triangle2_vertices, tex_coords2);
-        if triangle1_normal {
-            triangle2 = replace_normal(&triangle2, &triangle1[0].normal);
-        } else {
-            triangle1 = replace_normal(&triangle1, &triangle2[0].normal);
+#[derive(Debug, Clone, PartialEq)]
+pub struct Chunk {
+    width: i32,
+    depth: i32,
+    height: i32,
+    center: [i32;3],
+    initial: [i32;3],
+    blocks: Vec<Block>,
+    normals: HashMap<Faces, [i32;3]>
+}
+#[derive(Debug)]
+pub struct World {
+    chunks: Vec<Shape>
+}
+#[derive(Debug, Clone, PartialEq)]
+pub struct Block {
+    center: [i32;3],
+    faces: HashMap<Faces, Face>,
+}
+impl World {
+    pub fn new(display: &glium::Display, num_chunks_x: i32, num_chunks_z: i32, start: [i32;3]) -> World {
+        let mut chunks = vec![];
+        let mut center = start;
+        for _i in 0..num_chunks_x {
+            for _j in 0..num_chunks_z {
+                let mut chunk = Chunk::new(center);
+                chunk.construct();
+                println!("new chunck");
+                chunks.push(chunk.to_shape(display.clone()));
+                center[2]+=17;
+            }
+            center[0] -= 17;
+            center[2] = start[2];
         }
-        Face {
-            vertices: [triangle1, triangle2].concat().try_into().unwrap(),
+        World {
+            chunks
         }
+    }
+}
+impl Chunk {
+    pub fn new(center: [i32;3]) -> Chunk {
+        let normals = Shape::construct_normals(center);
+        Chunk {
+            width: 16,
+            depth: 16,
+            height: 256,
+            center,
+            initial: center,
+            blocks: vec![],
+            normals
+        }
+    }
+    pub fn to_shape(&self, display: glium::Display) -> Shape {
+        let vertices = self.vertices();
+        Shape::construct(display, &vertices, PrimitiveType::TrianglesList, (0..vertices.len() as u16).collect())
+    }
+    pub fn construct(&mut self) {
+        for _x in 0..(self.depth) {
+            for _j in 0..(self.height / 2) {
+                for _i in 0..self.width {
+
+                    self.add_block();
+                    self.center[0] += SIZE;
+                }
+                self.center[0] = self.initial[0];
+                self.center[1] += SIZE;
+            }
+
+            println!("{:?}", self.center);
+            self.center[1] = self.initial[1];
+            self.center[2] += SIZE;
+        }
+    }
+    fn add_block(&mut self) {
+        let mut faces_to_draw = vec![];
+        let [mut min_x, mut min_y, mut min_z] = self.initial;
+        if self.center < [self.width, self.height, self.depth] {
+
+            if self.center[0] == self.initial[0] {
+                faces_to_draw.push(Faces::Left);
+            }
+            if self.center[0] == self.initial[0]+(self.width)-1 {
+                faces_to_draw.push(Faces::Right);
+            }
+            if self.center[1] == self.initial[1] {
+                faces_to_draw.push(Faces::Bottom);
+            }
+            if self.center[1] == self.initial[1]+((self.height/2)-1) {
+                faces_to_draw.push(Faces::Top);
+            }
+            if self.center[2] == self.initial[2] {
+                faces_to_draw.push(Faces::Back);
+            }
+            if self.center[2] == self.initial[2]+(self.depth)-1 {
+                faces_to_draw.push(Faces::Front);
+            }
+            self.blocks.push(Shape::cube(self.center, &self.normals, faces_to_draw));
+        }
+    }
+    pub fn vertices(&self) -> Vec<Vertex> {
+        let mut vertices = vec![];
+        for block in &self.blocks {
+            vertices.append(&mut block.vertices());
+        }
+        vertices
     }
 
 }
 
-
-fn replace_normal(vertices: &[Vertex; 3], normal: &[f32;3]) -> [Vertex; 3] {
-    let mut vertex_data = vec!();
-    for vertex in vertices {
-        vertex_data.push(Vertex {
-            normal: *normal,
-            ..*vertex
-        });
+impl Block {
+    pub fn vertices(&self) -> Vec<Vertex> {
+        let mut vertices = vec![];
+        for a in self.faces.values() {
+            vertices.append(&mut a.vertices.to_vec());
+        }
+        vertices
     }
-    vertex_data.try_into().expect("Wrong Size")
 }
-fn construct_vertex(vertices: &[TVec3<f32>], tex_coords: [[f32;2];3]) -> [Vertex; 3] {
-    let b = vertices[0];
-    let r = vertices[1];
-    let s = vertices[2];
-    let qr = r - b;
-    let qs = s - b;
-    let n = glm::cross(&qr, &qs);
-    let vb = vertex!(*b.as_ref(), *n.as_ref(), tex_coords[0]);
-    let vr = vertex!(*r.as_ref(), *n.as_ref(), tex_coords[1]);
-    let vs = vertex!(*s.as_ref(), *n.as_ref(), tex_coords[2]);
-    [vb, vr, vs]
-}
-fn get_coords(dimensions: &[f32; 3], center: &[f32; 3]) -> [(f32, f32); 3] {
-    let min_x = center[0] - (dimensions[0] / 2.0);
-    let max_x = min_x + dimensions[0];
-    let min_y = center[1] - (dimensions[1] / 2.0);
-    let max_y = min_y + dimensions[1];
-    let min_z = center[2] - (dimensions[2] / 2.0);
-    let max_z = min_z + dimensions[2];
-    [(min_x, max_x), (min_y, max_y), (min_z, max_z)]
-}
+
 #[derive(Debug)]
 pub struct Shape {
     vertex_buffer: VertexBuffer<Vertex>,
     index_buffer: IndexBuffer<u16>,
 }
+
 impl Shape {
     pub fn get_vbuffer(&self) -> &'_ VertexBuffer<Vertex> {
         &self.vertex_buffer
@@ -112,106 +193,59 @@ impl Shape {
             index_buffer: ibuffer,
         }
     }
+    pub fn experimental_plane(display: &glium::Display, _width: u32, _height: u32, _depth: u32, start_pos: [i32;3]) -> Vec<Shape> {
+        let mut center = start_pos;
+        let mut plane = World::new(display, 16,  16, center);
+        plane.chunks
 
-    fn top_face(width: u32, depth: u32, start: [f32;3]) -> (Vec<Vertex>, Vec<u16>) {
-        let mut current_pos = start;
-        let b = TVec3::new(start[0], start[1], start[2]);
-        let r = TVec3::new(start[0] + 0.5, start[1], start[2]);
-        let s = TVec3::new(start[0], start[1], start[2] + 0.5);
+    }
+    pub fn cube(center: [i32;3], normals: &HashMap<Faces, [i32;3]>, faces_to_draw: Vec<Faces>/*, texture: Option<SrgbTexture2d>*/) -> Block {
+        let mut faces = HashMap::new();
+        for face in faces_to_draw {
+            let normal = normals.get(&face).expect("Hashmap must contain a normal for each face to draw");
+            let vertex_constructor = get_vertex_function(face);
+            let vertices = vertex_constructor(center, normal);
+            faces.insert(face, Face {
+                vertices
+            });
+        }
+        Block {
+            center,
+            faces,
+        }
+    }
+    fn calculate_vectors(b: TVec3<i32>, r: TVec3<i32>, s: TVec3<i32>) -> TVec3<i32> {
         let qr = r - b;
         let qs = s - b;
-        let n = glm::cross(&qr, &qs);
-        let normal = *n.as_ref();
-        let tex_coords = [
-            [1.0, 0.0],  // bottom right
-            [1.0, 1.0],  // top right
-            [0.0, 0.0],  // bottom left
-            [0.0, 1.0],  // top left
-        ];
-        let mut vertices = vec![];
-        let mut indices = vec![];
-        let mut index: u16 = 0;
-        for i in 0..=width {
-            for j in 0..=depth {
-                if index != ((width + 1) * i + depth) as u16 && (index + 1 + depth as u16 + 1) < ((width + 1) * (depth + 1)) as u16 {
-                    indices = [indices, vec![index, index + 1, index + 1 + depth as u16, index + 1, index + 1 + depth as u16, index + 1 + depth as u16 + 1]].concat();
-                }
-
-                if (i as f32 * 0.5).fract() == 0.0 {
-                    if (j as f32 * 0.5).fract() == 0.0 {
-                        //top
-                        vertices.push(vertex!(current_pos, normal, tex_coords[3]));
-                    } else {
-                        vertices.push(vertex!(current_pos, normal, tex_coords[1]));
-                    }
-                } else {
-                    if (j as f32 * 0.5).fract() == 0.0 {
-                        //top
-                        vertices.push(vertex!(current_pos, normal, tex_coords[2]));
-                    } else {
-                        vertices.push(vertex!(current_pos, normal, tex_coords[0]));
-                    }
-                }
-                current_pos[2] += 0.5;
-
-                index += 1;
-            }
-
-            current_pos[0] += 0.5;
-            current_pos[2] = start[2];
-
-        }
-        (vertices, indices)
+        glm::cross(&qr, &qs)
 
     }
-    pub fn cube(dimensions: &[f32; 3], center: &[f32; 3]) -> Face {
-        let [(min_x, max_x), (min_y, max_y), (min_z, max_z)] = get_coords(dimensions, center);
-        let v1 = glm::vec3(min_x, max_y, min_z);
-        let v3 = glm::vec3(max_x, max_y, min_z);
-        let v5 = glm::vec3(min_x, max_y, max_z);
-        let v7 = glm::vec3(max_x, max_y, max_z);
-        let tex_coords = [
-            [1.0, 0.0],
-            [1.0, 1.0],
-            [0.0, 0.0],
-            [0.0, 1.0],
-        ];
-        Face::construct_face(&[v1, v3, v5, v7], true, tex_coords)
+    fn construct_normals(start: [i32; 3]) -> HashMap<Faces, [i32; 3]> {
+        let mut normals = HashMap::new();
+        //TOP BOTTOM
+        let base = TVec3::new(start[0] - SIZE, start[1] - SIZE, start[2] - SIZE);
+        let mut horizontal = TVec3::new(start[0] + SIZE, start[1] - SIZE, start[2] - SIZE);
+        let mut vertical = TVec3::new(start[0] - SIZE, start[1] - SIZE, start[2] + SIZE);
+        let top_normal = Shape::calculate_vectors(base, horizontal, vertical);
+
+        normals.insert(Faces::Top, *top_normal.as_ref());
+        normals.insert(Faces::Bottom, *top_normal.as_ref());
+        //LEFT RIGHT
+        horizontal = TVec3::new(start[0] - SIZE, start[1] - SIZE, start[2] + SIZE);
+        vertical = TVec3::new(start[0] - SIZE, start[1] + SIZE, start[2] - SIZE);
+        let left_normal = Shape::calculate_vectors(base, horizontal, vertical);
+        normals.insert(Faces::Left, *left_normal.as_ref());
+        normals.insert(Faces::Right, *left_normal.as_ref());
+        //FRONT BACK
+
+        horizontal = TVec3::new(start[0] + SIZE, start[1] - SIZE, start[2] - SIZE);
+        let back_normal = Shape::calculate_vectors(base, horizontal, vertical);
+
+        normals.insert(Faces::Front, *back_normal.as_ref());
+        normals.insert(Faces::Back, *back_normal.as_ref());
+        normals
 
     }
-    pub fn optimized_plane(display: &glium::Display, width: u32, height: u32, depth: u32, start_pos: [f32;3]) -> Shape {
-        let start = Instant::now();
-        let mut top_vertices = Shape::top_face(width, depth, start_pos);
-        println!("1. {:?}", start.elapsed());
-        Shape::construct(display.clone(), &top_vertices.0, PrimitiveType::TrianglesList,
-        top_vertices.1)
 
-    }
-    pub fn plane(display: &glium::Display, width: u32, height: u32, depth: u32, start_pos: [f32;3]) -> Shape {
-        let start = Instant::now();
-        let mut plane: Vec<Face> = vec![];
-        let mut center = start_pos;
-        for _i in 0..width {
-            for _j in 0..depth {
-                for _x in 0..height {
-                    println!("{:?}", start.elapsed());
-                    plane.push(Shape::cube(&[0.5;3], &center));
-                    center[1] += 0.5;
-                }
-
-                center[1] = start_pos[2];
-                center[2] += 0.5;
-            }
-            center[2] = start_pos[2];
-            center[0] += 0.5;
-        }
-        //let world = optimize_world(&plane);
-        let shaped_world = plane.iter().map(|a| {
-            a.vertices
-        }).collect::<Vec<_>>();
-        let vertices = shaped_world.concat();
-        let index = (0..vertices.len() as u16).collect::<Vec<_>>();
-        Shape::construct(display.clone(), &vertices, PrimitiveType::TrianglesList, index)
-    }
 }
 

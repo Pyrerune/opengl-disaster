@@ -34,7 +34,7 @@ pub struct App {
     x_bound: bool,
     y_bound: bool,
     texture: glium::texture::SrgbTexture2d,
-    world: Shape,
+    world: Vec<Shape>,
 
 }
 impl App {
@@ -49,7 +49,8 @@ impl App {
         let time = std::time::Instant::now();
         //display.gl_window().window().set_cursor_visible(false);
         display.gl_window().window().set_cursor_grab(true).unwrap();
-        let world = Shape::optimized_plane(&display, 16, 1, 16, [0.0, 0.0, 0.0]);
+        let texture = load_image(&display, "./icon.png");
+        let world = Shape::experimental_plane(&display, 48, 256, 48, [0, 0, 0]);
         display.gl_window().window().set_cursor_position(PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32)).unwrap();
         App {
             display: display.clone(),
@@ -61,7 +62,7 @@ impl App {
             x_bound: false,
             y_bound: false,
             mouse_pos: PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32),
-            texture: load_image(&display, "./cow_horror.jpg"),
+            texture,
             world,
         }
     }
@@ -97,7 +98,9 @@ impl App {
         let mut target = self.display.draw();
         target.clear_color_and_depth((100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0), 1.0);
 
-        self.draw(&self.world, &mut target);
+        for chunk in &self.world {
+            self.draw(chunk, &mut target);
+        }
         target.finish().unwrap();
     }
     pub fn keyboard_input(&mut self, input: KeyboardInput) -> glutin::event_loop::ControlFlow {
@@ -123,11 +126,11 @@ impl App {
                 VirtualKeyCode::Escape => {
                     cf = glutin::event_loop::ControlFlow::Exit;
                 }
-                VirtualKeyCode::RControl => {
+                VirtualKeyCode::E => {
                     self.camera.up(STEP);
                     cf = glutin::event_loop::ControlFlow::Poll;
                 }
-                VirtualKeyCode::RShift => {
+                VirtualKeyCode::Q => {
                     self.camera.down(STEP);
                     cf = glutin::event_loop::ControlFlow::Poll;
                 }

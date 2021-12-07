@@ -12,7 +12,7 @@ pub struct Camera {
 }
 impl Camera {
     pub fn new(display: (u32, u32)) -> Camera {
-        let position = glm::vec3(0.0, 0.0, 3.0);
+        let position = glm::vec3(8.0, 129.0, 8.0);
         let target = glm::vec3(0.0, 0.0, 0.0);
 
         let direction = glm::normalize(&(position-target));
