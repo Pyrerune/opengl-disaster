@@ -2,3 +2,5 @@
 Cargo.lock
 /.idea
 opengl_monstrosity.iml
+/engine/Cargo.lock
+/engine/target/
