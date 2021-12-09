@@ -1,14 +1,40 @@
 use glium::glutin::event_loop::EventLoop;
 use glium::{glutin, Program, Surface, Frame};
-use crate::shape::Shape;
-use crate::shader::Shader;
-use crate::camera::Camera;
 use glium::glutin::event::{KeyboardInput, VirtualKeyCode};
 use std::time::Instant;
 use glium::glutin::dpi::PhysicalPosition;
 use std::path::Path;
+use crate::*;
 
-const STEP: f32 = 100.0;
+pub fn run(name: &str) {
+    let ev = glutin::event_loop::EventLoop::new();
+    let mut app = App::new(&ev, name);
+    ev.run(move |event, _, control_flow| {
+        app.render();
+        let frame_time = std::time::Instant::now() + std::time::Duration::from_micros(20);
+        *control_flow = glutin::event_loop::ControlFlow::WaitUntil(frame_time);
+
+        *control_flow = match event {
+            glutin::event::Event::WindowEvent { event, .. } => match event {
+                glutin::event::WindowEvent::CloseRequested => {
+                    glutin::event_loop::ControlFlow::Exit
+                },
+                glutin::event::WindowEvent::Resized(..) => {
+                    glutin::event_loop::ControlFlow::Poll
+                }
+                glutin::event::WindowEvent::CursorMoved { position, .. } => {
+                    app.cursor_moved(position)
+                }
+                glutin::event::WindowEvent::KeyboardInput { input, .. } => {
+                    app.world.update(app.camera.get_position());
+                    app.keyboard_input(input)
+                },
+                _ => glutin::event_loop::ControlFlow::Poll,
+            },
+            _ => glutin::event_loop::ControlFlow::Poll,
+        };
+    });
+}
 fn mat4(val: f32) -> glm::TMat4<f32> {
     glm::mat4(val, 0.0, 0.0, 0.0,
                 0.0, val, 0.0, 0.0,
@@ -24,17 +50,17 @@ fn load_image<P: AsRef<Path>>(display: &glium::Display, filename: P) -> glium::t
 }
 #[derive(Debug)]
 pub struct App {
-    pub display: glium::Display,
-    pub program: Program,
-    pub camera: Camera,
+    display: glium::Display,
+    program: Program,
+    camera: Camera,
     start_time: Instant,
     last_frame: f32,
     current_frame: f32,
-    pub mouse_pos: PhysicalPosition<f32>,
+    mouse_pos: PhysicalPosition<f32>,
     x_bound: bool,
     y_bound: bool,
     texture: glium::texture::SrgbTexture2d,
-    world: Vec<Shape>,
+    world: World,
 
 }
 impl App {
@@ -50,7 +76,7 @@ impl App {
         //display.gl_window().window().set_cursor_visible(false);
         display.gl_window().window().set_cursor_grab(true).unwrap();
         let texture = load_image(&display, "./icon.png");
-        let world = Shape::experimental_plane(&display, 48, 256, 48, [0, 0, 0]);
+
         display.gl_window().window().set_cursor_position(PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32)).unwrap();
         App {
             display: display.clone(),
@@ -63,7 +89,7 @@ impl App {
             y_bound: false,
             mouse_pos: PhysicalPosition::new(viewport.0 as f32/2 as f32, viewport.1 as f32/2 as f32),
             texture,
-            world,
+            world: World::new(1, 1, [0; 3]),
         }
     }
 
@@ -80,6 +106,7 @@ impl App {
             tex: &self.texture,
 
         };
+
         let params = glium::draw_parameters::DrawParameters {
             depth: glium::Depth {
                 test: glium::DepthTest::IfLess,
@@ -98,8 +125,8 @@ impl App {
         let mut target = self.display.draw();
         target.clear_color_and_depth((100.0/255.0, 149.0/255.0, 237.0/255.0, 1.0), 1.0);
 
-        for chunk in &self.world {
-            self.draw(chunk, &mut target);
+        for chunk in self.world.get_drawn() {
+            self.draw(&chunk.to_shape(self.display.clone()), &mut target);
         }
         target.finish().unwrap();
     }

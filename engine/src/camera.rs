@@ -1,3 +1,5 @@
+use crate::FAR;
+
 #[derive(Debug, Clone)]
 pub struct Camera {
     view: glm::TMat4<f32>,
@@ -5,10 +7,10 @@ pub struct Camera {
     position: glm::TVec3<f32>,
     front: glm::TVec3<f32>,
     up: glm::TVec3<f32>,
-    pub delta_time: f32,
+    delta_time: f32,
     direction: glm::TVec3<f32>,
-    pub pitch: f32,
-    pub yaw: f32,
+    pub(crate) pitch: f32,
+    pub(crate) yaw: f32,
 }
 impl Camera {
     pub fn new(display: (u32, u32)) -> Camera {
@@ -18,7 +20,7 @@ impl Camera {
         let direction = glm::normalize(&(position-target));
         let up = glm::vec3(0.0, 1.0, 0.0);
         let front = glm::vec3(0.0, 0.0, -1.0);
-        let projection = glm::perspective((display.0/display.1) as f32, glm::radians(&glm::vec1(45.0)).x, 0.1, 100.0);
+        let projection = glm::perspective((display.0/display.1) as f32, glm::radians(&glm::vec1(45.0)).x, 0.1, FAR);
         let view = glm::look_at(&position, &(position + front), &up);
         Camera {
             view,
@@ -36,6 +38,9 @@ impl Camera {
         let view = glm::look_at(&self.position, &(self.position + self.front), &self.up);
         self.set_view(view);
 
+    }
+    pub fn get_position(&self) -> [f32;3] {
+        *self.position.as_ref()
     }
     pub fn set_time(&mut self, delta: f32) {
         self.delta_time = delta;

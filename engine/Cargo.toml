@@ -1,10 +1,18 @@
 [package]
-name = "opengl_monstrosity"
+name = "engine"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-engine = { path = "./engine" }
+glium = "0.30"
+nalgebra-glm = "0.15"
+image = "0.23"
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "benchmarks"
+harness = false
