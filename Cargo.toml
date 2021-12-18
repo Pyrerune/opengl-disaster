@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 engine = { path = "./engine" }
-
+glium = "0.30"

@@ -1,23 +1,21 @@
 mod app;
 mod camera;
-mod shader;
-mod shape;
 mod vertex;
 mod world;
-
-#[macro_use]
-extern crate glium;
 extern crate nalgebra_glm as glm;
 pub use app::*;
 pub use camera::*;
-pub use shader::*;
-pub use shape::*;
 pub use vertex::*;
 pub use world::*;
 pub use consts::*;
+
+#[macro_use]
+extern crate glium;
+
+implement_vertex!(Vertex, position, tex_coords);
 mod consts {
-    pub const SIZE: i32 = 1;
-    pub const TEX: [[i32; 2]; 4] = [
+    pub const SIZE: f32 = 0.5;
+    pub const TEX: [[u32; 2]; 4] = [
         [1, 1],  // top right
         [1, 0],  // bottom right
         [0, 1],  // top left

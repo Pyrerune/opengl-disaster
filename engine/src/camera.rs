@@ -2,19 +2,19 @@ use crate::FAR;
 
 #[derive(Debug, Clone)]
 pub struct Camera {
-    view: glm::TMat4<f32>,
-    projection: glm::TMat4<f32>,
-    position: glm::TVec3<f32>,
+    pub view: glm::TMat4<f32>,
+    pub projection: glm::TMat4<f32>,
+    pub position: glm::TVec3<f32>,
     front: glm::TVec3<f32>,
     up: glm::TVec3<f32>,
     delta_time: f32,
     direction: glm::TVec3<f32>,
-    pub(crate) pitch: f32,
-    pub(crate) yaw: f32,
+    pub pitch: f32,
+    pub yaw: f32,
 }
 impl Camera {
     pub fn new(display: (u32, u32)) -> Camera {
-        let position = glm::vec3(8.0, 129.0, 8.0);
+        let position = glm::vec3(0.0, 0.0, 0.0);
         let target = glm::vec3(0.0, 0.0, 0.0);
 
         let direction = glm::normalize(&(position-target));
@@ -38,9 +38,6 @@ impl Camera {
         let view = glm::look_at(&self.position, &(self.position + self.front), &self.up);
         self.set_view(view);
 
-    }
-    pub fn get_position(&self) -> [f32;3] {
-        *self.position.as_ref()
     }
     pub fn set_time(&mut self, delta: f32) {
         self.delta_time = delta;
@@ -83,13 +80,7 @@ impl Camera {
         self.position += glm::normalize(&glm::cross(&self.front, &self.up)) * step * self.delta_time;
         self.update();
     }
-    pub fn view(&self) -> glm::TMat4<f32> {
-        self.view
-    }
     pub fn set_view(&mut self, view: glm::TMat4<f32>) {
         self.view = view;
-    }
-    pub fn projection(&self) -> glm::TMat4<f32> {
-        self.projection
     }
 }
