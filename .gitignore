@@ -3,5 +3,5 @@ Cargo.lock
 /.idea
 opengl_monstrosity.iml
 /engine/target/
-icon.png
-cow_horror.jpg
+icon.jpg
+icon.jpg

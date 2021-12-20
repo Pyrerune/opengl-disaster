@@ -1,7 +1,7 @@
 
 #[macro_use]
 extern crate glium;
-use glium::glutin;
+use glium::{DrawParameters, glutin, Program};
 use glutin::dpi::PhysicalPosition;
 use glutin::event::WindowEvent;
 use glutin::event::{KeyboardInput, VirtualKeyCode, Event};
@@ -10,6 +10,7 @@ use glium::index::PrimitiveType;
 use glium::Surface;
 use engine::*;
 use engine::vertices::CollectVertices;
+use glium::uniforms::{AsUniformValue, Uniforms, UniformsStorage};
 
 fn handle_keyboard_input(input: KeyboardInput) -> ControlFlow {
     let mut cf = ControlFlow::Poll;
@@ -75,16 +76,14 @@ fn handle_window_event(event: WindowEvent)-> ControlFlow {
     }
     cf
 }
+
+
 fn main() {
     let mut ev = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &ev).unwrap();
     let engine = App::new(display.get_framebuffer_dimensions());
-    
-    let shape = engine.world.vertices();
-    let vbuffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-    let ibuffer = glium::IndexBuffer::new(&display, PrimitiveType::TrianglesList, &(0..shape.len() as u16).collect::<Vec<_>>()).unwrap();
     let program = glium::Program::from_source(&display, &engine.vertex_shader, &engine.fragment_shader, None).unwrap();
     let dimensions = engine.texture.dimensions();
     let raw = glium::texture::RawImage2d::from_raw_rgba_reversed(&engine.texture.into_raw(), dimensions);
@@ -98,7 +97,6 @@ fn main() {
         .. Default::default()
     };
     ev.run(move |ev, _, cf| {
-        let mut target = display.draw();
         let next_frame_time = std::time::Instant::now() +
             std::time::Duration::from_nanos(16_666_667);
         *cf = ControlFlow::WaitUntil(next_frame_time);
@@ -109,8 +107,14 @@ fn main() {
             tex: &texture,
 
         };
+        let mut target = display.draw();
         target.clear_color_and_depth((0.40, 0.58, 0.93, 1.0), 1.0);
-        target.draw(&vbuffer, &ibuffer, &program, &uniforms, &params).unwrap();
+        for chunk in &engine.world.chunks {
+            let vertices = chunk.vertices();
+            let vbuffer = glium::VertexBuffer::new(&display, &vertices).unwrap();
+            let ibuffer = glium::IndexBuffer::new(&display, PrimitiveType::TrianglesList, &(0..vertices.len() as u16).collect::<Vec<_>>()).unwrap();
+            target.draw(&vbuffer, &ibuffer, &program, &uniforms, &params);
+        }
         target.finish().unwrap();
         match ev {
             Event::WindowEvent {event, ..} => {

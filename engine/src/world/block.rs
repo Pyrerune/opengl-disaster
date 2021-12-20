@@ -9,7 +9,11 @@ pub struct Block {
 impl Block {
 
     pub fn vertices(&self) -> Vec<Vertex> {
-        self.faces.concat()
+        let mut vertices = vec![];
+        for face in self.faces {
+            vertices.append(&mut face.to_vec());
+        }
+        vertices
     }
     pub fn new(center: [f32; 3]) -> Block {
         let vertices = all_faces(center);

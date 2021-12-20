@@ -1,9 +1,9 @@
 use crate::world::Chunk;
 use crate::consts::*;
 use crate::world::vertices::*;
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct World {
-    pub collection: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
 }
 
 impl World {
@@ -21,8 +21,7 @@ impl World {
             center[2] = start[2];
         }
         World {
-            collection: chunks,
+            chunks: chunks,
         }
     }
 }
-impl_vertices!(World);

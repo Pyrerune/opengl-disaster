@@ -39,11 +39,11 @@ impl App {
         App {
             camera,
             mouse_pos: (0.0, 0.0),
-            texture: load_image("./icon.png"),
+            texture: load_image("./icon.jpg"),
             vertex_shader: load_shader("engine/shaders/vertex.shader"),
             fragment_shader: load_shader("engine/shaders/fragment.shader"),
             model: mat4(1.0),
-            world: World::new(10, 10, [0.0; 3])
+            world: World::new(1, 1, [0.0; 3])
         }
     }
 }

@@ -9,7 +9,7 @@ pub struct Chunk {
     center: [f32;3],
     start: [f32;3],
     initial: [f32;3],
-    collection: Vec<Block>,
+    blocks: Vec<Block>,
 }
 
 impl Chunk {
@@ -22,7 +22,7 @@ impl Chunk {
             center: middle,
             start: center,
             initial: center,
-            collection: vec![],
+            blocks: vec![],
         }
     }
     pub fn get_distance(&self, position: [f32; 3]) -> f32 {
@@ -44,8 +44,15 @@ impl Chunk {
             self.start[2] += SIZE;
         }
     }
+    pub fn vertices(&self) -> Vec<Vertex> {
+        println!("FUCK");
+        let mut vertices = vec![];
+        for block in &self.blocks {
+            vertices.append(&mut block.vertices());
+        }
+        vertices
+    }
     fn add_block(&mut self) {
-        self.collection.push(Block::new(self.start));
+        self.blocks.push(Block::new(self.start));
     }
 }
-impl_vertices!(Chunk);
