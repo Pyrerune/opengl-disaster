@@ -1,6 +1,5 @@
 use crate::world::Chunk;
 use crate::consts::*;
-use crate::world::vertices::*;
 #[derive(Clone, Debug)]
 pub struct World {
     pub chunks: Vec<Chunk>,

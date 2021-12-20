@@ -1,7 +1,7 @@
 
 #[macro_use]
 extern crate glium;
-use glium::{DrawParameters, glutin, Program};
+use glium::glutin;
 use glutin::dpi::PhysicalPosition;
 use glutin::event::WindowEvent;
 use glutin::event::{KeyboardInput, VirtualKeyCode, Event};
@@ -9,8 +9,6 @@ use glutin::event_loop::ControlFlow;
 use glium::index::PrimitiveType;
 use glium::Surface;
 use engine::*;
-use engine::vertices::CollectVertices;
-use glium::uniforms::{AsUniformValue, Uniforms, UniformsStorage};
 
 fn handle_keyboard_input(input: KeyboardInput) -> ControlFlow {
     let mut cf = ControlFlow::Poll;
@@ -29,6 +27,7 @@ fn handle_keyboard_input(input: KeyboardInput) -> ControlFlow {
     }
     cf
 }
+
 fn handle_mouse_input(position: PhysicalPosition<f64>) -> glutin::event_loop::ControlFlow {
     //println!("Got input");
     /*let mut xoff = position.x as f32 - self.mouse_pos.x;
@@ -70,7 +69,7 @@ fn handle_window_event(event: WindowEvent)-> ControlFlow {
             cf = handle_keyboard_input(input);
         }
         WindowEvent::CursorMoved {position, ..} => {
-            //cf = handle_mouse_input(position);
+            cf = handle_mouse_input(position);
         }
         _ => {}
     }
@@ -79,7 +78,7 @@ fn handle_window_event(event: WindowEvent)-> ControlFlow {
 
 
 fn main() {
-    let mut ev = glutin::event_loop::EventLoop::new();
+    let ev = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &ev).unwrap();
@@ -110,10 +109,10 @@ fn main() {
         let mut target = display.draw();
         target.clear_color_and_depth((0.40, 0.58, 0.93, 1.0), 1.0);
         for chunk in &engine.world.chunks {
-            let vertices = chunk.vertices();
+            let vertices = chunk.clone().vertices();
             let vbuffer = glium::VertexBuffer::new(&display, &vertices).unwrap();
             let ibuffer = glium::IndexBuffer::new(&display, PrimitiveType::TrianglesList, &(0..vertices.len() as u16).collect::<Vec<_>>()).unwrap();
-            target.draw(&vbuffer, &ibuffer, &program, &uniforms, &params);
+            target.draw(&vbuffer, &ibuffer, &program, &uniforms, &params).unwrap();
         }
         target.finish().unwrap();
         match ev {

@@ -1,6 +1,6 @@
 use crate::world::Block;
 use crate::consts::*;
-use crate::world::vertices::*;
+use crate::Vertex;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Chunk {
     width: i32,
@@ -13,6 +13,11 @@ pub struct Chunk {
 }
 
 impl Chunk {
+    pub fn vertices(self) -> Vec<Vertex> {
+        self.blocks.into_iter().map(|a| {
+            a.into()
+        }).collect::<Vec<Vec<_>>>().concat()
+    }
     pub fn new(center: [f32;3]) -> Chunk {
         let middle = [center[0]+8.0, center[1], center[2]+8.0];
         Chunk {
@@ -29,7 +34,7 @@ impl Chunk {
         ((position[0]-self.center[0] as f32).powf(2.0) + (position[2]-self.center[2] as f32).powf(2.0)).sqrt()
     }
     pub fn construct(&mut self) {
-        for x in 0..(self.depth) {
+        for _x in 0..(self.depth) {
             for _j in 0..(self.height / 2) {
                 for _i in 0..self.width {
 
@@ -44,15 +49,9 @@ impl Chunk {
             self.start[2] += SIZE;
         }
     }
-    pub fn vertices(&self) -> Vec<Vertex> {
-        println!("FUCK");
-        let mut vertices = vec![];
-        for block in &self.blocks {
-            vertices.append(&mut block.vertices());
-        }
-        vertices
-    }
+
     fn add_block(&mut self) {
         self.blocks.push(Block::new(self.start));
     }
 }
+

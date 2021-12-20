@@ -2,7 +2,6 @@ use std::fs::File;
 use std::path::Path;
 use std::io::Read;
 use crate::*;
-use crate::consts::*;
 use image::RgbaImage;
 use glm::TMat4;
 
@@ -43,7 +42,7 @@ impl App {
             vertex_shader: load_shader("engine/shaders/vertex.shader"),
             fragment_shader: load_shader("engine/shaders/fragment.shader"),
             model: mat4(1.0),
-            world: World::new(1, 1, [0.0; 3])
+            world: World::new(10, 10, [0.0; 3])
         }
     }
 }
